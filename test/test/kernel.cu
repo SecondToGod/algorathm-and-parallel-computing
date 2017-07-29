@@ -26,7 +26,7 @@ int main()
         return 1;
     }
 
-    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
+    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n hello world",
         c[0], c[1], c[2], c[3], c[4]);
 
     // cudaDeviceReset must be called before exiting in order for profiling and
@@ -36,7 +36,7 @@ int main()
         fprintf(stderr, "cudaDeviceReset failed!");
         return 1;
     }
-
+	system("pause");
     return 0;
 }
 
