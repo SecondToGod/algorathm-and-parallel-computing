@@ -32,22 +32,17 @@ public:
     }
 };
 
-//奇异值分解 A = U * diag(s) *V'
-void svd(SparseMatrix &A,int r,vector<vector<double> > &U,vector<double> &s,vector<vector<double> > &V,string algo="DC");
+//分解 A = U * diag(s) *V'
+void svd(SparseMatrix &A,int r,vector<vector<double> > &U,vector<double> &s,vector<vector<double> > &V);
 
-void print(vector<vector<double> > &A);//输出矩阵
+void print(vector<vector<double> > &A);//打印矩阵
 
-void transpose(vector<vector<double> > &A,vector<vector<double> >&T);//转置
-
-void multiply(vector<vector<double> > &A,vector<vector<double> > &B,vector<vector<double> >&C);//矩阵乘
-
+void DCTridiagonal(vector<double> &alpha, vector<double> &beta, vector<vector<double> > &Q, vector<double> &D);
 
 void lanczos(SparseMatrix &A, vector<vector<double> > &P, vector<double> &alpha, vector<double> &beta, unsigned int rank);
 
-void lanczosT(SparseMatrix &A, vector<vector<double> > &P, vector<double> &alpha, vector<double> &beta, unsigned int rank);
-
 template <class T>
-void combine(vector<T> &v,int left,int m,int right,vector<int> &index){
+void combine(vector<T> &v,int left,int m,int right,vector<int> &index){//归并排序
     vector<T> tempv(v.begin()+left,v.begin()+right+1);
     vector<int> tempindex(index.begin()+left,index.begin()+right+1);
 
