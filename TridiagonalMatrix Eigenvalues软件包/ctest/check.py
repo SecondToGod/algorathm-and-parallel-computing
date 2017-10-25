@@ -1,6 +1,6 @@
 ﻿import numpy as np 
 
-f = np.loadtxt('./data.txt')
+f = np.loadtxt('./data50.txt')
 x = np.matrix(f)
 print x
 a = np.linalg.matrix_rank(x)

@@ -32,14 +32,13 @@ public:
     }
 };
 
-//分解 A = U * diag(s) *V'
-void svd(SparseMatrix &A,int r,vector<vector<double> > &U,vector<double> &s,vector<vector<double> > &V);
+
+void resolve(SparseMatrix &A,int r,vector<vector<double> > &U,vector<double> &s,vector<vector<double> > &V);
 
 void print(vector<vector<double> > &A);//打印矩阵
 
-void DCTridiagonal(vector<double> &alpha, vector<double> &beta, vector<vector<double> > &Q, vector<double> &D);
-
 void lanczos(SparseMatrix &A, vector<vector<double> > &P, vector<double> &alpha, vector<double> &beta, unsigned int rank);
+
 
 template <class T>
 void combine(vector<T> &v,int left,int m,int right,vector<int> &index){//归并排序

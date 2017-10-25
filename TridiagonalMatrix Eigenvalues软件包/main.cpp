@@ -9,7 +9,7 @@ license：GPL 3.0
 #include <cstdlib>
 #include <fstream>
 #include "func.h"
-#define DIM 60
+#define DIM 100
 
 int main(){
     cout.precision(8);
@@ -22,7 +22,11 @@ int main(){
 	
     //读入矩阵数据
 	FILE *fp;
-	fp = fopen("./ctest/data.txt","r");
+	fp = fopen("./ctest/data100.txt","r");
+	if(!fp){
+		cout<<"文件打开失败！"<<endl;
+		return -1;
+	}
     for(int i=0;i<A.rows;i++){
 		int tmp;
         for(int j=0;j<A.cols;j++){
@@ -89,6 +93,7 @@ int main(){
 	} 
 	cout<<endl<<"数据读取完毕..."<<endl<<"alpha.size: "<<alpha.size()<<endl
 		<<"beta.size: "<<beta.size()<<endl;
+		
 	clock_t start,finish;//计时
 	start = clock();
 	
@@ -100,7 +105,7 @@ int main(){
 	
 	vector<vector<double> > U,V;
     vector<double> s;
-	svd(A,rank,U,s,V);//开始svd分解 
+	resolve(A,rank,U,s,V);//开始svd分解 
 	
 	cout<<endl;
 	cout<<"特征值:"<<endl;//输出特征值
@@ -112,7 +117,7 @@ int main(){
     }
     cout<<endl;
 	
-	fp = fopen("./ctest/result.txt","w");//写入特征向量矩阵
+	fp = fopen("./result.txt","w");//写入特征向量矩阵
 	int rows = U.size(),cols = U[0].size();
 	fprintf(fp,"%s","特征向量矩阵为:\n");
 	for(int i=0;i<rows;++i){

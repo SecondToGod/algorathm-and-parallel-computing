@@ -3,11 +3,13 @@
 #include <time.h>
 #include <cstdlib>
 #include <fstream>
+#include <limits>
 #include <unistd.h>
 
 using namespace std;
 int main(){
 	vector<int> b(50);
+	cout<< numeric_limits<double>::min()<<endl;
 	/* FILE *fp;
 	int a[100];
 	fp = fopen("./data.txt","r");
@@ -23,7 +25,7 @@ int main(){
 		}
 		cout << endl;
 	} */
-	 ifstream in("./data1.txt");
+	/* ifstream in("./data1.txt");
 	if(!in) { 
         cerr<<"Can't open the file."<<endl; 
         return -1; 
@@ -37,7 +39,7 @@ int main(){
 		cout<<b[i]<<" ";
 	}
 	cout<<endl;
-	in.close(); 
+	in.close();  */
 	clock_t start, finish;
 	start = clock();
 	sleep(3);//<unistd.h>

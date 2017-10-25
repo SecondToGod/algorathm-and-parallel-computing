@@ -3,26 +3,13 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <limits>
 #include <cstdlib>
 #include <algorithm>
 #include <iomanip>
-#include <fstream>
-#include <time.h>
 using namespace std;
 
 const double EPS = 1e-8;//精度
-
-void print(vector<vector<double> > &X){
-    cout.precision(6);
-    cout.setf(ios::fixed);
-    for(int i=0 ;i < X.size();i++){
-        for(int j=0;j < X[i].size();j++){
-            cout<<X[i][j]<<' ';
-        }
-        cout<<endl;
-    }
-    cout<<endl;
-}
 
 //转置
 void transpose(vector<vector<double> > &A,vector<vector<double> > &T){
@@ -37,23 +24,7 @@ void transpose(vector<vector<double> > &A,vector<vector<double> > &T){
         }
     }
 }
-//生成随机归一化标准向量
-void randUnitVector(int n, vector<double> &v){
-    v.clear();v.resize(n);
-    while(true){
-        double r=0;
-        for(int i=0;i<n;i++){
-            v[i]= i % 5;
-            r+=v[i]*v[i];
-        }
-        r=sqrt(r);
-        if(r>EPS){
-            for(int i=0;i<n;i++)
-                v[i]/=r;
-            break;
-        }
-    }
-} 
+
 //上三角转置
 void transpose(vector<vector<double> > &A){
     int m = A.size();
@@ -120,7 +91,7 @@ void rightMultiply(SparseMatrix &A, const vector<double> & v, vector<double> & r
 }
 
 //res= A'*A*v
-void leftMultiply(SparseMatrix &A, const vector<double> &v, vector<double> & res){
+void leftMultiply(SparseMatrix &A, const vector<double> & v, vector<double> & res){
     int m=A.rows;
     int n=A.cols;
     res.clear();
@@ -139,7 +110,7 @@ void leftMultiply(SparseMatrix &A, const vector<double> &v, vector<double> & res
 }
 
 //C= B'*A
-void rightMultiply(const vector<vector<double> > &B,SparseMatrix &A, vector<vector<double> > &C){
+void rightMultiply(const vector<vector<double> > & B,SparseMatrix &A, vector<vector<double> > & C){
     int m=B[0].size();
     int k=B.size();
     int n=A.cols;
@@ -154,7 +125,7 @@ void rightMultiply(const vector<vector<double> > &B,SparseMatrix &A, vector<vect
 }
 
 //C = A'*B
-void leftMultiply(const vector<vector<double> > &B,SparseMatrix &A, vector<vector<double> > &C){
+void leftMultiply(const vector<vector<double> > & B,SparseMatrix &A, vector<vector<double> > & C){
     int r=B[0].size();
     int n=B.size();
     int m=A.rows;
@@ -183,7 +154,7 @@ double normalize(vector<double> &v){
     for(int i=0;i<v.size();i++)
         r += v[i]*v[i];
     r = sqrt(r);
-    if(r > EPS && r > 0){
+    if(r > EPS){
         for(int i=0;i<v.size();i++)
             v[i] /= r;
     }
@@ -196,6 +167,36 @@ void multiply(vector<double> &v, double d){
         v[i] *= d;
 }
 
+//随机单位向量
+void randUnitVector(int n, vector<double> &v){
+    v.clear();v.resize(n);
+    while(true){
+        double r=0;
+        for(int i=0;i<n;i++){
+            v[i]= i % 5;
+            r+=v[i]*v[i];
+        }
+        r=sqrt(r);
+        if(r>EPS){
+            for(int i=0;i<n;i++)
+                v[i]/=r;
+            break;
+        }
+    }
+}
+
+//打印输出
+void print(vector<vector<double> > &X){
+    cout.precision(6);
+    cout.setf(ios::fixed);
+    for(int i=0 ;i < X.size();i++){
+        for(int j=0;j < X[i].size();j++){
+            cout<<X[i][j]<<' ';
+        }
+        cout<<endl;
+    }
+    cout<<endl;
+}
 
 
 //特征方程求解
@@ -203,6 +204,7 @@ vector<double> secularEquationSolver(vector<double> &z, vector<double> &D, doubl
  
     int n=z.size();
     vector<double> res(n);
+    //sort : d_0 < d_1 < ... < d_{n-1}
     vector<int> index;
     vector<double> d(n);
     merge_sort(D,index);//归并从小到大排序
@@ -266,40 +268,33 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
         D[start]=alpha[start];
         return;
     }else{
-        int mid=(start+end)/2;//划分
-        alpha[mid]-=beta[mid+1];
+        int mid=(start+end)/2;  //划分
+        alpha[mid]-=beta[mid+1];  //统一协调秩1修补矩阵
         alpha[mid+1]-=beta[mid+1];
-		
-        DCSub(alpha,beta,Q,D,start,mid);//递归
+        DCSub(alpha,beta,Q,D,start,mid);  //递归
         DCSub(alpha,beta,Q,D,mid+1,end);
-
+		
         int n=end-start+1;
-        vector<double> z(n,0);//构造向量z=(q1',q2')
-        for(int i=start;i<=mid;i++)
-            z[i-start]=Q[mid][i];
+        vector<double> z(n,0);
+        for(int i=start;i<=mid;i++)  //构造向量z=(q1',q2')
+            z[i-start]=Q[mid][i];	//子矩阵最后一行
         for(int i=mid+1;i<=end;i++)
-            z[i-start]=Q[mid+1][i];
+            z[i-start]=Q[mid+1][i];	//子矩阵第一行
 
         //计算矩阵 D+beta[mid+1]*z*z'的特征值
-
         vector<double> d(n,0);
         for(int i=0;i<n;i++)
             d[i]=D[i+start];
 
-        // 计算特征方程 1 + \sum_j \frac{z^2_j}{d_j-\lambda} =0 中lambda的值
+        // 计算特征方程 1 + \sum_j \frac{z^2_j}{d_j-\lambda} =0 lambda的值
         vector<double> lambda=secularEquationSolver(z, d, beta[mid+1]);
-		
-		cout<<endl<<start<<":"<<end<<endl;
-		for(int i=0;i<n;i++){
-			cout<<lambda[i]<<" ";
-		}
-        ////对块内每个特征值计算局部特征向量 P = (D-\lambda I)^{-1} z
+		  
+        //对块内每个特征值计算局部特征向量 P = (D-\lambda I)^{-1} z
         vector<vector<double> > P(n,vector<double>(n));
-        for(int i=0;i<n;i++){
+        for(int i=0;i<n;i++){//for each eigen value
             vector<double> p(n);
-            for(int j=0;j<n;j++){
-				 p[j]=1.0/(D[j+start]-lambda[i])*z[j];
-			}  
+            for(int j=0;j<n;j++)
+                p[j]=1.0/(D[j+start]-lambda[i])*z[j];
             normalize(p);
             for(int j=0;j<n;j++)
                 P[j][i]=p[j];
@@ -311,7 +306,7 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
                 oldQ[i][j]=Q[i+start][j+start];
             }
         
-        for(int i=0;i<n;i++){//更新当前Q矩阵
+        for(int i=0;i<n;i++){	//更新当前Q矩阵
             for(int j=0;j<n;j++){
                 Q[i+start][j+start]=0;
                 for(int k=0;k<n;k++){
@@ -319,45 +314,40 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
                 }
             }
         }
-        //特征值
+        //更新特征值
         for(int i=0;i<n;i++)
             D[i+start]=lambda[i];
     }
 }
 
-//三对角分解入口
-void DCTridiagonal(vector<double> &alpha, vector<double> &beta, vector<vector<double> > &Q, vector<double> &D){
+//分治三对角入口
+void DCTridiagonal(vector<double> alpha, vector<double> &beta, vector<vector<double> > &Q, vector<double> &D){
     int m=alpha.size();
     Q.clear();
     Q.resize(m,vector<double>(m,0));
     D.clear();
     D.resize(m,0);
     DCSub(alpha, beta, Q, D, 0, m-1);
-	/*vector<int> index;
-	merge_sort(D,index);
-	reverse(index.begin(),index.end());
-	 for(int i=0;i<m;i++){
-		for(int j=0;j<m;j++){
-			cout<<Q[i][j]<<" ";
-		}
-		cout<<endl;
-	}   */	
 }
 
-
 //svd分解
-void svd(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> &s, vector<vector<double> > &V){
+void resolve(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> &s, vector<vector<double> > &V){
+    //A=U*diag(s)*V'
+    //A:m*n matrix sparse matrix
+    //U:m*r matrix, U[i]=i th left singular vector
+    //s:r vector
+    //V:n*r matrix, V[i]=i th right singular vector
     int m=A.rows;
     int n=A.cols;
+   
     //lanczos: A*A'=P*T*P'
-    if(m <= n){
+    if(m<=n){
         int l=m;
         vector<vector<double> > P(m,vector<double>(l,0));
         vector<double> alpha(l,0);
         vector<double> beta(l,0);
-		
         lanczos(A,P,alpha,beta,l);
-        vector<vector<double> > W; 
+        vector<vector<double> > W;
 		vector<double> D(l,0);
 		vector<vector<double> > Q;
 		DCTridiagonal(alpha,beta,Q,D);//调用分治法分解
@@ -368,13 +358,14 @@ void svd(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> &s, 
 			}
 			cout<<endl;
 		} */
-		vector<int> index;//排序后索引
+		vector<int> index;	//排序后索引
 		merge_sort(D,index);
-		reverse(index.begin(),index.end());//从大到小逆序
+		reverse(index.begin(),index.end());	//逆序
 		W.resize(l,vector<double>(l));
 		for(int i=0;i<l;i++)
 			for(int j=0;j<l;j++)
-				W[i][j]=Q[i][index[j]];
+				W[i][j]=Q[i][index[j]];	//改变原Q的顺序赋给W
+       
         U.clear();
 		U.resize(m,vector<double>(l));
         multiply(P,W,U);
@@ -383,17 +374,18 @@ void svd(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> &s, 
         V.clear();V.resize(n,vector<double>(r));
         rightMultiply(U,A,V);
         s.clear();s.resize(r,0);
-        for(int i=0;i<r;i++){//归一化
+        for(int i=0;i<r;i++){	//归一化
             for(int j=0;j<n;j++)
                 s[i]+=V[j][i]*V[j][i];
             s[i]=sqrt(s[i]);
             if(s[i]>EPS){
                 for(int j=0;j<n;j++)
-					V[j][i]/=s[i];
+                V[j][i]/=s[i];
             }
         }
     }
 }
+
 void lanczos(SparseMatrix &A, vector<vector<double> > &P, vector<double> &alpha, vector<double> &beta, unsigned int rank){
     //P'*A*A'*P = T = diag(alpha) + diag(beta,1) + diag(beta, -1)
     //P=[p1,p2, ... , pk]
@@ -402,7 +394,7 @@ void lanczos(SparseMatrix &A, vector<vector<double> > &P, vector<double> &alpha,
     unsigned int m=A.rows;
     unsigned int n=A.cols;
     vector<double> prevP(m,0);
-    randUnitVector(m,p);//生成随机归一化P矩阵
+    randUnitVector(m,p);	//生成随机归一化P向量
     P.clear();
     P.resize(m,vector<double>(rank,0));
     vector<double> v;
@@ -411,9 +403,9 @@ void lanczos(SparseMatrix &A, vector<vector<double> > &P, vector<double> &alpha,
     beta[0]=0;
     for(int i=0;i<rank;i++){
         for(int j=0;j<p.size();j++){
-            P[j][i]=p[j];//P的每一列都为p
+            P[j][i]=p[j];	//P的每一列都为p
         }
-        rightMultiply(A, p, v);
+        rightMultiply(A, p, v);	//v=A'*P
         alpha[i]=dotProduct(p,v);
         if(i+1<rank){
             for(int j=0;j<m;j++)
@@ -424,4 +416,4 @@ void lanczos(SparseMatrix &A, vector<vector<double> > &P, vector<double> &alpha,
                 p[j]=v[j]/beta[i+1];
         }
     }
-}  
+}
