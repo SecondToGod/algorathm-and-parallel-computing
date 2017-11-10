@@ -3,13 +3,13 @@
 #include <vector>
 #include <string>
 #include <cmath>
-#include <limits>
+#include <cfloat>
 #include <cstdlib>
 #include <algorithm>
 #include <iomanip>
 using namespace std;
 
-const double EPS = 1e-8;//精度
+const double EPS = 1e-4;//精度
 
 //转置
 void transpose(vector<vector<double> > &A,vector<vector<double> > &T){
@@ -173,7 +173,7 @@ void randUnitVector(int n, vector<double> &v){
     while(true){
         double r=0;
         for(int i=0;i<n;i++){
-            v[i]= i % 5;
+            v[i]= i % 8;
             r+=v[i]*v[i];
         }
         r=sqrt(r);
@@ -229,7 +229,7 @@ vector<double> secularEquationSolver(vector<double> &z, vector<double> &D, doubl
             for(int j=0;j<delta.size();j++)
                 if(j!=i)
                     B-=b[j]*b[j]/delta[j];
-            double C=1;
+            double C=1.0;
             for(int j=0;j<delta.size();j++)
                 if(j!=i)
                     C+=b[j]*b[j]/delta[j];
@@ -271,10 +271,9 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
         int mid=(start+end)/2;  //划分
         alpha[mid]-=beta[mid+1];  //统一协调秩1修补矩阵
         alpha[mid+1]-=beta[mid+1];
-        DCSub(alpha,beta,Q,D,start,mid);  //递归
+		DCSub(alpha,beta,Q,D,start,mid);  //递归
         DCSub(alpha,beta,Q,D,mid+1,end);
-		
-        int n=end-start+1;
+        int n=end-start+1;//矩阵规模
         vector<double> z(n,0);
         for(int i=start;i<=mid;i++)  //构造向量z=(q1',q2')
             z[i-start]=Q[mid][i];	//子矩阵最后一行
@@ -284,22 +283,34 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
         //计算矩阵 D+beta[mid+1]*z*z'的特征值
         vector<double> d(n,0);
         for(int i=0;i<n;i++)
-            d[i]=D[i+start];
-
-        // 计算特征方程 1 + \sum_j \frac{z^2_j}{d_j-\lambda} =0 lambda的值
-        vector<double> lambda=secularEquationSolver(z, d, beta[mid+1]);
-		  
-        //对块内每个特征值计算局部特征向量 P = (D-\lambda I)^{-1} z
-        vector<vector<double> > P(n,vector<double>(n));
-        for(int i=0;i<n;i++){//for each eigen value
+            d[i]=D[i+start];//获得子矩阵特征值
+		
+		cout<<start<<" : "<<end<<endl;
+		cout<<"d[] completed ."<<endl;		
+		
+        //计算特征方程 1 + sum_j \frac{z^2_j}{d_j-\lambda} =0 中lambda的值
+        vector<double> lambda = secularEquationSolver(z, d, beta[mid+1]);//整合子矩阵特征值和修正矩阵特征值
+		cout<<"lambda completed ."<<endl;	
+        //对块内每个特征值计算局部特征向量 p = (D-\lambda I)^{-1} *z
+        vector<vector<double> > P(n,vector<double>(n));//（以下p[n-2]计算过程有问题,求到的倒数第二个P列向量有问题）
+        for(int i=0;i<n;i++){
             vector<double> p(n);
-            for(int j=0;j<n;j++)
-                p[j]=1.0/(D[j+start]-lambda[i])*z[j];
+            for(int j=0;j<n;j++){
+				double tem = D[j+start]-lambda[i]+EPS;//防止出现除0操作
+				p[j]= z[j]*double(1)/(tem == 0?tem+EPS:tem);//出现除0操作
+				/* if(_isnan(p[j])){//溢出或非确定性操作检测
+					//cout<<j<<" ****IND***** "<<lambda[i];
+				} */
+				/* if(){
+					cout<<D[j+start]<<" "<<lambda[i]<<" "<<z[j]<<" "<<p[j]<<endl;//出现bug
+				} */
+			}
             normalize(p);
-            for(int j=0;j<n;j++)
-                P[j][i]=p[j];
+            for(int j=0;j<n;j++){
+				P[j][i]=p[j];
+			}
         }
-        
+        cout<<"P[][] completed."<<endl;
         vector<vector<double> > oldQ(n,vector<double>(n));
         for(int i=0;i<n;i++)
             for(int j=0;j<n;j++){
@@ -314,9 +325,13 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
                 }
             }
         }
+		cout<<"Q updating completed."<<endl;
         //更新特征值
-        for(int i=0;i<n;i++)
-            D[i+start]=lambda[i];
+        for(int i=0;i<n;i++){
+			D[i+start]=lambda[i];
+		}
+		
+		cout<<endl;
     }
 }
 
@@ -330,7 +345,7 @@ void DCTridiagonal(vector<double> alpha, vector<double> &beta, vector<vector<dou
     DCSub(alpha, beta, Q, D, 0, m-1);
 }
 
-//svd分解
+//主程序入口
 void resolve(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> &s, vector<vector<double> > &V){
     //A=U*diag(s)*V'
     //A:m*n matrix sparse matrix
@@ -349,7 +364,7 @@ void resolve(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> 
         lanczos(A,P,alpha,beta,l);
         vector<vector<double> > W;
 		vector<double> D(l,0);
-		vector<vector<double> > Q;
+		vector<vector<double> > Q(l,vector<double>(0));
 		DCTridiagonal(alpha,beta,Q,D);//调用分治法分解
 		/*cout<<"Q       :"<<endl;
 		 for(int i=0;i<m;i++){
@@ -359,7 +374,9 @@ void resolve(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> 
 			cout<<endl;
 		} */
 		vector<int> index;	//排序后索引
+		cout<<"sorting..."<<endl;
 		merge_sort(D,index);
+		cout<<"sorting completed."<<endl;
 		reverse(index.begin(),index.end());	//逆序
 		W.resize(l,vector<double>(l));
 		for(int i=0;i<l;i++)
@@ -368,11 +385,15 @@ void resolve(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> 
        
         U.clear();
 		U.resize(m,vector<double>(l));
+		cout<<"calculating U..."<<endl;
         multiply(P,W,U);
+		cout<<"calculating U completed ."<<endl;
         for(int i=0;i<U.size();i++)
             U[i].resize(r);
         V.clear();V.resize(n,vector<double>(r));
+		cout<<"calculating V..."<<endl;
         rightMultiply(U,A,V);
+		cout<<"calculating V completed ."<<endl;
         s.clear();s.resize(r,0);
         for(int i=0;i<r;i++){	//归一化
             for(int j=0;j<n;j++)
@@ -380,7 +401,7 @@ void resolve(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> 
             s[i]=sqrt(s[i]);
             if(s[i]>EPS){
                 for(int j=0;j<n;j++)
-                V[j][i]/=s[i];
+                V[j][i] /= s[i];
             }
         }
     }

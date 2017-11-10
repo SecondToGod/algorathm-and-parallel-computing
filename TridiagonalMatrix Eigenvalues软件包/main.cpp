@@ -9,7 +9,7 @@ license：GPL 3.0
 #include <cstdlib>
 #include <fstream>
 #include "func.h"
-#define DIM 100
+#define DIM 500
 
 int main(){
     cout.precision(8);
@@ -22,7 +22,7 @@ int main(){
 	
     //读入矩阵数据
 	FILE *fp;
-	fp = fopen("./ctest/data100.txt","r");
+	fp = fopen("./ctest/data500.txt","r");
 	if(!fp){
 		cout<<"文件打开失败！"<<endl;
 		return -1;
@@ -83,14 +83,14 @@ int main(){
 	D.clear();
 	D.resize(DIM);
 	*/
-	cout<<"alpha:"<<endl;
+	/* cout<<"alpha:"<<endl;
 	for(int i=0;i<DIM;i++){
 		cout<<alpha[i]<<" ";
 	}
 	cout<<endl<<"beta:"<<endl;
 	for(int i=0;i<DIM-1;i++){
 		cout<<beta[i]<<" ";
-	} 
+	}  */
 	cout<<endl<<"数据读取完毕..."<<endl<<"alpha.size: "<<alpha.size()<<endl
 		<<"beta.size: "<<beta.size()<<endl;
 		
@@ -117,7 +117,7 @@ int main(){
     }
     cout<<endl;
 	
-	fp = fopen("./result.txt","w");//写入特征向量矩阵
+	/* fp = fopen("./result.txt","w");//写入特征向量矩阵
 	int rows = U.size(),cols = U[0].size();
 	fprintf(fp,"%s","特征向量矩阵为:\n");
 	for(int i=0;i<rows;++i){
@@ -127,7 +127,8 @@ int main(){
 		fprintf(fp,"%s","\n");
 	}
 	fclose(fp);
-    cout<<"特征向量矩阵已写入result.txt文件!\n"<<endl; 
+    cout<<"特征向量矩阵已写入result.txt文件!\n"<<endl;  */ 
+	
     //print(U);
 
 	/* fp = fopen("./ctest/result.txt","a");//写入矩阵V
