@@ -9,7 +9,8 @@
 #include <iomanip>
 using namespace std;
 
-const double EPS = 1e-4;//精度
+const double EPS = 1e-9;//精度
+const double ZERO = 1e-10;//0
 
 //转置
 void transpose(vector<vector<double> > &A,vector<vector<double> > &T){
@@ -197,10 +198,13 @@ void print(vector<vector<double> > &X){
     }
     cout<<endl;
 }
-
+//避免除0操作
+double prezero(double num){
+	return num = num==0?ZERO:num;
+}
 
 //特征方程求解
-vector<double> secularEquationSolver(vector<double> &z, vector<double> &D, double sigma){
+vector<double> secularEquationSolver(vector<double> &z, vector<double> &D, double sigma,int start,int end){
  
     int n=z.size();
     vector<double> res(n);
@@ -215,16 +219,27 @@ vector<double> secularEquationSolver(vector<double> &z, vector<double> &D, doubl
         b[i]=z[index[i]];
         d[i]=D[index[i]];
     }
-
+	if(start == 0 && end == 99){
+		cout<<"0阶段"<<endl;
+	}
     vector<double> lambda(n);
     for(int i=0;i<n;i++){
+		if(start == 0 && end == 99){
+			cout<<i+1<<"次循环"<<endl;
+		}
         vector<double> delta(d.size());
-        for(int j=0;j<delta.size();j++)
-            delta[j]=(d[j]-d[i])/sigma;
+        for(int j=0;j<delta.size();j++){
+		    delta[j]=(d[j]-d[i])/sigma;
+			delta[j]= prezero(delta[j]);//去0
+		}
         double gamma=0;
         if(i+1<n){
             //gamma>1/delta[i+1]
+			//delta[i+1]=prezero(delta[i+1]);//去0
+			if(delta[i+1]==0) cout<<"delta[i+1]"<<delta[i+1]<<endl;
             double A=b[i]*b[i];
+			if(A==0) cout<<"A"<<A<<i<<endl;
+			//A = prezero(A);
             double B=-A/delta[i+1]-1;
             for(int j=0;j<delta.size();j++)
                 if(j!=i)
@@ -236,24 +251,41 @@ vector<double> secularEquationSolver(vector<double> &z, vector<double> &D, doubl
             C/=delta[i+1];
             C-=b[i+1]*b[i+1]/delta[i+1];
             gamma=(-B+sqrt(B*B-4*A*C))/(2*A);
+			gamma = prezero(gamma);
+			if(start == 0 && end == 99){
+			cout<<"gamma完成 "<<gamma<<endl;
+			}
         }
+		
+		
         //牛顿法迭代求解
         double diff=1;
         while(diff*diff>EPS){
             double g=0;
             for(int j=0;j<n;j++){
-                g-=b[j]*b[j]/((delta[j]*gamma-1)*(delta[j]*gamma-1));
+				double dg = delta[j]*gamma-1;
+				dg = prezero(dg);
+                g-=b[j]*b[j]/(dg*dg);
             }
+			g = prezero(g); 
             double f=1;
             for(int j=0;j<n;j++){
-                f+=b[j]*b[j]/(delta[j]-1/gamma);
+				double idg = delta[j]-1/gamma;
+				idg = prezero(idg);
+                f+=b[j]*b[j]/(idg);
             }
             //f+g(newGamma-gamma)=0
             double newGamma=-f/g+gamma;
             diff=fabs(newGamma-gamma);
             gamma=newGamma;
         }
-        lambda[i]=1/gamma*sigma+d[i];
+		if(start == 0 && end == 99){
+			cout<<i<<"次牛顿法完成"<<endl;
+		}
+        lambda[i]=double(1)/gamma*sigma+d[i];
+		if(start == 0 && end == 99){
+			cout<<i<<"次循环完成"<<endl;
+		}
     }
 
     for(int i=0;i<n;i++)
@@ -286,24 +318,24 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
             d[i]=D[i+start];//获得子矩阵特征值
 		
 		cout<<start<<" : "<<end<<endl;
-		cout<<"d[] completed ."<<endl;		
+		cout<<"z[],d[] completed ."<<endl;		
 		
         //计算特征方程 1 + sum_j \frac{z^2_j}{d_j-\lambda} =0 中lambda的值
-        vector<double> lambda = secularEquationSolver(z, d, beta[mid+1]);//整合子矩阵特征值和修正矩阵特征值
+        vector<double> lambda = secularEquationSolver(z, d, beta[mid+1],start,end);//整合子矩阵特征值和修正矩阵特征值
 		cout<<"lambda completed ."<<endl;	
         //对块内每个特征值计算局部特征向量 p = (D-\lambda I)^{-1} *z
-        vector<vector<double> > P(n,vector<double>(n));//（以下p[n-2]计算过程有问题,求到的倒数第二个P列向量有问题）
+        vector<vector<double> > P(n,vector<double>(n));
         for(int i=0;i<n;i++){
             vector<double> p(n);
             for(int j=0;j<n;j++){
-				double tem = D[j+start]-lambda[i]+EPS;//防止出现除0操作
-				p[j]= z[j]*double(1)/(tem == 0?tem+EPS:tem);//出现除0操作
+				double tem = D[j+start]-lambda[i];
+				p[j]= z[j]*double(1)/prezero(tem);
 				/* if(_isnan(p[j])){//溢出或非确定性操作检测
 					//cout<<j<<" ****IND***** "<<lambda[i];
 				} */
-				/* if(){
-					cout<<D[j+start]<<" "<<lambda[i]<<" "<<z[j]<<" "<<p[j]<<endl;//出现bug
-				} */
+				/*  if(start==250 && end == 499&& i>240){
+					cout<<D[j+start]<<" "<<lambda[i]<<" "<<z[j]<<" "<<p[j]<<endl;
+				}  */
 			}
             normalize(p);
             for(int j=0;j<n;j++){
@@ -329,8 +361,7 @@ void DCSub(vector<double> &alpha, vector<double> &beta, vector<vector<double> > 
         //更新特征值
         for(int i=0;i<n;i++){
 			D[i+start]=lambda[i];
-		}
-		
+		}	
 		cout<<endl;
     }
 }
@@ -347,11 +378,6 @@ void DCTridiagonal(vector<double> alpha, vector<double> &beta, vector<vector<dou
 
 //主程序入口
 void resolve(SparseMatrix &A, int r, vector<vector<double> > &U, vector<double> &s, vector<vector<double> > &V){
-    //A=U*diag(s)*V'
-    //A:m*n matrix sparse matrix
-    //U:m*r matrix, U[i]=i th left singular vector
-    //s:r vector
-    //V:n*r matrix, V[i]=i th right singular vector
     int m=A.rows;
     int n=A.cols;
    

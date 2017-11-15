@@ -9,7 +9,7 @@ license：GPL 3.0
 #include <cstdlib>
 #include <fstream>
 #include "func.h"
-#define DIM 500
+#define DIM 1000
 
 int main(){
     cout.precision(8);
@@ -22,7 +22,7 @@ int main(){
 	
     //读入矩阵数据
 	FILE *fp;
-	fp = fopen("./ctest/data500.txt","r");
+	fp = fopen("./ctest/data1000.txt","r");
 	if(!fp){
 		cout<<"文件打开失败！"<<endl;
 		return -1;

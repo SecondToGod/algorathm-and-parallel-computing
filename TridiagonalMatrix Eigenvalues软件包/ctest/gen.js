@@ -1,12 +1,12 @@
 var fs = require('fs');
 var os = require('os');
-var dim = 500;
+var dim = 5000;
 var wopt = {
 	flag: "w",
 	encoding: "utf8",
 	mode: 0666
 };
-var stream = fs.createWriteStream('./data500.txt',wopt);
+var stream = fs.createWriteStream('./data5000.txt',wopt);
 
 for(var i=0;i<dim;i++){
 	for(var j=0;j<dim;j++){
